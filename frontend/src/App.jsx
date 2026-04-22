@@ -5,10 +5,12 @@ function App() {
 
   useEffect(() => {
     // Calling our Flask Backend on Port 5000
-    // Note: Ensure your Python app.py is running in a SEPARATE terminal!
-    fetch('http://localhost:5000/api/insight')
+    fetch('http://127.0.0.1:5000/api/health')
       .then(res => res.json())
-      .then(data => setStatus(data.message))
+      .then(data => {
+        // We use data.status and data.database because that's what Flask sends!
+        setStatus(`Connected: ${data.status} | DB: ${data.database}`)
+      })
       .catch(() => setStatus("Bridge Error: Is Flask running on Port 5000?"))
   }, [])
 
