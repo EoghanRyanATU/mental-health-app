@@ -52,6 +52,8 @@ def bridge_test():
 
 
 # 5. Run the Application
-if __name__ == "__main__":
-    # Running on Port 5000 as it is standard for Flask development
-    app.run(debug=True, port=5000)
+if __name__ == '__main__':
+    # Checks if an environment variable is set, defaults to False for security
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    
+    app.run(debug=debug_mode, port=5000)
