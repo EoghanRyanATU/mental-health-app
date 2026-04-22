@@ -1,3 +1,4 @@
+import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
@@ -52,8 +53,8 @@ def bridge_test():
 
 
 # 5. Run the Application
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Checks if an environment variable is set, defaults to False for security
-    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    
+    debug_mode = os.getenv("FLASK_DEBUG", "False").lower() == "true"
+
     app.run(debug=debug_mode, port=5000)
