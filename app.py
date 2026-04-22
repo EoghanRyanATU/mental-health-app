@@ -1,60 +1,94 @@
 import os
+import sqlite3
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from datetime import datetime
 
-# 1. Initialize the Flask application
 app = Flask(__name__)
-
-# 2. Enable Cross-Origin Resource Sharing (CORS)
-# This is vital for the 'Bridge'—it allows your React app (on Port 3000)
-# to talk to this Python server (on Port 5000).
 CORS(app)
 
-
-# 3. Simple 'Insight Engine' Logic (Placeholder)
-def get_mood_insight(mood):
-    """
-    Business Logic: Processes a mood log and returns supportive text.
-    In the BSc report, this represents the 'Insight Engine' module.
-    """
-    insights = {
-        "happy": "That's wonderful! Reflect on what made you smile today.",
-        "anxious": "Try the 5-4-3-2-1 grounding technique. You are safe.",
-        "sad": "It is okay to feel this way. Treat yourself with kindness.",
-        "tired": "Rest is productive. Your body is asking for a recharge.",
-    }
-    return insights.get(
-        mood.lower(), "Thank you for sharing how you feel. I am here to listen."
-    )
+DB_FILE = "mental_health.db"
 
 
-# 4. API Endpoints
+# --- Database Initialization ---
+def init_db():
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    # Create the table if it doesn't exist
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS mood_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            mood TEXT,
+            note TEXT,
+            insight TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+
+init_db()
+
+# --- Routes ---
+
+
 @app.route("/api/health", methods=["GET"])
 def health_check():
-    """
-    Used for DORA Measurement: Ensures the service is reachable.
-    """
-    return jsonify({"status": "online", "version": "1.0.0", "engine": "Python/Flask"})
+    return jsonify({"status": "online", "database": "connected"})
 
 
-@app.route("/api/insight", methods=["GET"])
-def bridge_test():
-    """
-    The 'Hello World Bridge' endpoint.
-    React will call this to verify the connection.
-    """
-    return jsonify(
-        {
-            "status": "success",
-            "message": "Bridge established! The Insight Engine is communicating.",
-            "advice": get_mood_insight("happy"),  # Defaulting to happy for the test
-        }
+@app.route("/api/log", methods=["POST"])
+def log_mood():
+    data = request.json
+    mood = data.get("mood")
+    note = data.get("note")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Simple Rule-Based Insight Engine
+    insights = {
+        "Happy": "That's great! Take a moment to appreciate what made you smile today.",
+        "Neutral": "Consistency is key. A steady day is a good day.",
+        "Anxious": "Try the 4-7-8 breathing technique: Inhale for 4, hold for 7, exhale for 8.",
+        "Sad": "It's okay to not be okay. Consider reaching out to a friend or writing more in your journal.",
+    }
+
+    selected_insight = insights.get(
+        mood, "Keep tracking to see your patterns over time!"
     )
 
+    # Save to SQLite
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO mood_logs (timestamp, mood, note, insight) VALUES (?, ?, ?, ?)",
+        (timestamp, mood, note, selected_insight),
+    )
+    conn.commit()
+    conn.close()
 
-# 5. Run the Application
+    return jsonify({"status": "success", "insight": selected_insight})
+
+
+@app.route("/api/history", methods=["GET"])
+def get_history():
+    """Fetches all logs from the database and returns them as a list of dictionaries."""
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    # The 'SELECT' command is the actual retrieval of history
+    cursor.execute("SELECT * FROM mood_logs ORDER BY timestamp DESC")
+    rows = cursor.fetchall()
+
+    # Converting the SQL rows into a format the Frontend understands (JSON)
+    history = [dict(row) for row in rows]
+
+    conn.close()
+    return jsonify(history)
+
+
 if __name__ == "__main__":
-    # Checks if an environment variable is set, defaults to False for security
+    # Bandit-safe debug handling
     debug_mode = os.getenv("FLASK_DEBUG", "False").lower() == "true"
-
     app.run(debug=debug_mode, port=5000)
