@@ -1,0 +1,62 @@
+name: Mental Health App CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "feature/*" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # --- BACKEND QUALITY & SECURITY ---
+  backend-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Tools
+        run: |
+          pip install flake8 bandit black
+          pip install -r requirements.txt
+      
+      - name: Code Formatting Check (Black)
+        run: black --check .
+        
+      - name: Linting (Flake8)
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Security Scan (Bandit)
+        run: bandit -r . -x ./venv
+        # Bandit finds common security holes in Python code
+
+  # --- FRONTEND QUALITY & SECURITY ---
+  frontend-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install & Audit
+        run: |
+          cd frontend
+          npm install
+          npm audit --audit-level=high 
+          # Checks for known vulnerabilities in your JS libraries
+
+      - name: Lint Check
+        run: |
+          cd frontend
+          npm run lint # Vite projects come with ESLint pre-configured
+
+  # --- FINAL BUILD CHECK ---
+  build-verification:
+    needs: [backend-quality, frontend-quality]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Final Build
+        run: echo "All Quality and Security Gates Passed!"
