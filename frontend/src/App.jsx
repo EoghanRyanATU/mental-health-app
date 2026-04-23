@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import MoodForm from './MoodForm'
+import HistoryList from './HistoryList'
 
 function App() {
   const [status, setStatus] = useState("Connecting to Insight Engine...")
@@ -41,6 +43,8 @@ function App() {
         }}>
           {status}
         </p>
+        <MoodForm />
+        <HistoryList />
       </div>
     </div>
   )
