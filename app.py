@@ -88,6 +88,24 @@ def get_history():
     return jsonify(history)
 
 
+@app.route("/api/log/<int:log_id>", methods=["DELETE"])
+def delete_log(log_id):
+    """
+    Deletes a specific mood log entry by its ID.
+    Follows RESTful standards for resource removal.
+    """
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+
+    # Using parameterized queries to maintain security standards
+    cursor.execute("DELETE FROM mood_logs WHERE id = ?", (log_id,))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"message": f"Log {log_id} deleted successfully"}), 200
+
+
 if __name__ == "__main__":
     # Bandit-safe debug handling
     debug_mode = os.getenv("FLASK_DEBUG", "False").lower() == "true"
