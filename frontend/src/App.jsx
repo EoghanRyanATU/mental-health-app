@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react'
 import MoodForm from './MoodForm'
 import HistoryList from './HistoryList'
+import TrendsChart from './TrendsChart'
 
 function App() {
   const [status, setStatus] = useState("Connecting to Insight Engine...")
 
   useEffect(() => {
-    // Calling our Flask Backend on Port 5000
     fetch('http://127.0.0.1:5000/api/health')
       .then(res => res.json())
       .then(data => {
-        // We use data.status and data.database because that's what Flask sends!
         setStatus(`Connected: ${data.status} | DB: ${data.database}`)
       })
       .catch(() => setStatus("Bridge Error: Is Flask running on Port 5000?"))
@@ -21,12 +20,14 @@ function App() {
       display: 'flex', 
       flexDirection: 'column', 
       alignItems: 'center', 
-      justifyContent: 'center', 
-      height: '100vh',
+      padding: '40px 0', // Changed from height: 100vh to allow scrolling
+      minHeight: '100vh',
       fontFamily: 'sans-serif',
       backgroundColor: '#f8f9fa' 
     }}>
       <div style={{ 
+        width: '90%',
+        maxWidth: '800px', // Added a max-width so the chart doesn't get too wide
         padding: '40px', 
         backgroundColor: 'white', 
         borderRadius: '15px', 
@@ -35,15 +36,24 @@ function App() {
       }}>
         <h1 style={{ color: '#646cff' }}>Mental Health Insight App</h1>
         <hr style={{ border: '0.5px solid #eee', width: '80%' }} />
+        
         <h2 style={{ color: '#2c3e50' }}>Engine Connection Status:</h2>
         <p style={{ 
-          fontSize: '1.5rem', 
+          fontSize: '1rem', 
           fontWeight: 'bold',
-          color: status.includes('Error') ? '#e74c3c' : '#27ae60' 
+          color: status.includes('Error') ? '#e74c3c' : '#27ae60',
+          marginBottom: '30px'
         }}>
           {status}
         </p>
+
+        {/* 1. INPUT SECTION */}
         <MoodForm />
+
+        {/* 2. VISUAL ANALYSIS SECTION (Subtask #24) */}
+        <TrendsChart />
+
+        {/* 3. HISTORICAL REFERENCE SECTION */}
         <HistoryList />
       </div>
     </div>
