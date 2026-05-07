@@ -90,11 +90,22 @@ def log_mood():
 
 @app.route("/api/history", methods=["GET"])
 def get_history():
+    search_query = request.args.get("q", "")  # Get ?q=keyword from URL
+
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        rows = cursor.execute(
-            "SELECT * FROM mood_logs ORDER BY timestamp DESC"
-        ).fetchall()
+
+        if search_query:
+            # SQL search through notes and moods
+            query = "SELECT * FROM mood_logs WHERE note LIKE ? OR mood LIKE ? ORDER BY timestamp DESC"
+            rows = cursor.execute(
+                query, (f"%{search_query}%", f"%{search_query}%")
+            ).fetchall()
+        else:
+            rows = cursor.execute(
+                "SELECT * FROM mood_logs ORDER BY timestamp DESC"
+            ).fetchall()
+
     return jsonify([dict(row) for row in rows]), 200
 
 
