@@ -88,6 +88,19 @@ def log_mood():
     return jsonify({"status": "success", "insight": selected_insight}), 201
 
 
+@app.route("/api/log/<int:log_id>", methods=["PUT"])
+def update_log(log_id):
+    data = request.json
+    new_note = data.get("note")
+
+    with get_db_connection() as conn:
+        # Update only the note for that specific ID
+        conn.execute("UPDATE mood_logs SET note = ? WHERE id = ?", (new_note, log_id))
+        conn.commit()
+
+    return jsonify({"status": "success", "message": "Entry updated successfully"}), 200
+
+
 @app.route("/api/history", methods=["GET"])
 def get_history():
     search_query = request.args.get("q", "")  # Get ?q=keyword from URL
