@@ -1,10 +1,11 @@
 :root {
-  --primary: #6366f1;       /* Sleek Indigo */
-  --primary-dark: #4f46e5;
-  --bg-color: #f8fafc;      /* Soft Slate grey */
-  --text-main: #1e293b;
+  --primary: #6366f1;       /* Indigo Accent */
+  --nav-bg: #0f172a;        /* Deep Midnight Navy */
+  --footer-bg: #0f172a;
+  --app-bg: #f1f5f9;        /* Cool Steel/Slate Background */
+  --text-light: #f8fafc;
+  --text-dark: #1e293b;
   --card-bg: #ffffff;
-  --border: #e2e8f0;
 }
 
 * {
@@ -14,11 +15,10 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Inter', -apple-system, system-ui, sans-serif;
-  background-color: var(--bg-color);
-  color: var(--text-main);
-  /* This removes the "centered-flex" behavior of Vite that squashes the UI */
-  display: block; 
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--app-bg); /* The new non-white background */
+  color: var(--text-dark);
+  display: block;
   min-height: 100vh;
 }
 
