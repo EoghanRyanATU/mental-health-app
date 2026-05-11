@@ -88,13 +88,37 @@ def log_mood():
     return jsonify({"status": "success", "insight": selected_insight}), 201
 
 
+@app.route("/api/log/<int:log_id>", methods=["PUT"])
+def update_log(log_id):
+    data = request.json
+    new_note = data.get("note")
+
+    with get_db_connection() as conn:
+        # Update only the note for that specific ID
+        conn.execute("UPDATE mood_logs SET note = ? WHERE id = ?", (new_note, log_id))
+        conn.commit()
+
+    return jsonify({"status": "success", "message": "Entry updated successfully"}), 200
+
+
 @app.route("/api/history", methods=["GET"])
 def get_history():
+    search_query = request.args.get("q", "")  # Get ?q=keyword from URL
+
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        rows = cursor.execute(
-            "SELECT * FROM mood_logs ORDER BY timestamp DESC"
-        ).fetchall()
+
+        if search_query:
+            # SQL search through notes and moods
+            query = "SELECT * FROM mood_logs WHERE note LIKE ? OR mood LIKE ? ORDER BY timestamp DESC"
+            rows = cursor.execute(
+                query, (f"%{search_query}%", f"%{search_query}%")
+            ).fetchall()
+        else:
+            rows = cursor.execute(
+                "SELECT * FROM mood_logs ORDER BY timestamp DESC"
+            ).fetchall()
+
     return jsonify([dict(row) for row in rows]), 200
 
 
