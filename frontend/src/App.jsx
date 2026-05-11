@@ -4,26 +4,12 @@ import { Navbar, Footer } from './components/Layout'
 import MoodForm from './MoodForm'
 import HistoryList from './HistoryList'
 import TrendsChart from './TrendsChart'
-import Resources from './pages/Resources';
-
-// Temporary Placeholder components for new pages
-const AnalyticsPage = () => (
-  <div style={cardStyle}>
-    <h2>Advanced Analytics</h2>
-    <p style={{ color: '#64748b' }}>Detailed sleep vs. mood correlations coming soon.</p>
-  </div>
-);
-
-const ResourcesPage = () => (
-  <div style={cardStyle}>
-    <h2>Support Resources</h2>
-    <p style={{ color: '#64748b' }}>Helpful links and breathing exercises will be listed here.</p>
-  </div>
-);
+import AnalyticsPage from './AnalyticsPage' 
+import ResourcesPage from './ResourcesPage' 
 
 function App() {
   const [status, setStatus] = useState("Connecting to Insight Engine...")
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Placeholder for Auth state
+  const [isLoggedIn, setIsLoggedIn] = useState(false); 
 
   // Backend Health Check
   useEffect(() => {
@@ -37,12 +23,12 @@ function App() {
 
   return (
     <Router>
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
         
         {/* 1. NAVIGATION BAR */}
         <Navbar isLoggedIn={isLoggedIn} setIsLoggedIn={setIsLoggedIn} />
 
-        {/* 2. CONNECTION STATUS BANNER - Visible on all pages */}
+        {/* 2. CONNECTION STATUS BANNER */}
         <div style={{ 
           backgroundColor: status.includes('Error') ? '#fef2f2' : '#f0fdf4',
           padding: '8px 0',
@@ -53,9 +39,7 @@ function App() {
         }}>
           <span style={{ 
             display: 'inline-block', 
-            width: '8px', 
-            height: '8px', 
-            borderRadius: '50%', 
+            width: '8px', height: '8px', borderRadius: '50%', 
             backgroundColor: status.includes('Error') ? '#ef4444' : '#22c55e',
             marginRight: '8px'
           }}></span>
@@ -64,16 +48,12 @@ function App() {
 
         {/* 3. DYNAMIC CONTENT AREA */}
         <main style={{ 
-          flex: 1, 
-          maxWidth: '850px', 
-          margin: '40px auto', 
-          width: '90%',
-          display: 'flex',
-          flexDirection: 'column'
+          flex: 1, maxWidth: '1100px', margin: '40px auto', width: '90%',
+          display: 'flex', flexDirection: 'column'
         }}>
           
           <Routes>
-            {/* DASHBOARD ROUTE (HOME) */}
+            {/* DASHBOARD (FR1, FR2) */}
             <Route path="/" element={
               <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                 <header style={{ textAlign: 'left' }}>
@@ -95,7 +75,7 @@ function App() {
               </div>
             } />
 
-            {/* JOURNAL ROUTE */}
+            {/* JOURNAL (FR5, FR7) */}
             <Route path="/journal" element={
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <header style={{ textAlign: 'left' }}>
@@ -106,11 +86,11 @@ function App() {
               </div>
             } />
 
-            {/* ANALYTICS ROUTE */}
+            {/* ANALYTICS (FR4 - Detailed Patterns) */}
             <Route path="/analytics" element={<AnalyticsPage />} />
 
-            {/* RESOURCES ROUTE */}
-            <Route path="/resources" element={<Resources />} />
+            {/* RESOURCES (FR6 - Support) */}
+            <Route path="/resources" element={<ResourcesPage />} />
           </Routes>
           
         </main>
@@ -121,27 +101,16 @@ function App() {
   )
 }
 
-// Styling Constants to keep the JSX clean
+// Styling Constants
 const cardStyle = {
   backgroundColor: 'white',
   padding: '35px',
   borderRadius: '24px',
-  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)',
+  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
   border: '1px solid #f1f5f9'
 };
 
-const headerStyle = {
-  fontSize: '2.4rem', 
-  fontWeight: '800', 
-  color: '#1e293b', 
-  margin: '0 0 10px 0',
-  letterSpacing: '-1px'
-};
-
-const subHeaderStyle = {
-  color: '#64748b', 
-  fontSize: '1.1rem', 
-  margin: 0
-};
+const headerStyle = { fontSize: '2.4rem', fontWeight: '800', color: '#1e293b', margin: '0 0 10px 0', letterSpacing: '-1px' };
+const subHeaderStyle = { color: '#64748b', fontSize: '1.1rem', margin: 0 };
 
 export default App;
