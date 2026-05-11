@@ -138,6 +138,105 @@ def wipe_history():
     return jsonify({"status": "success", "message": "All logs deleted"}), 200
 
 
+@app.route("/api/stats/mood-counts", methods=["GET"])
+def get_mood_stats():
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        # Aggregates counts of each mood type
+        query = "SELECT mood, COUNT(*) as count FROM mood_logs GROUP BY mood"
+        rows = cursor.execute(query).fetchall()
+
+        # Convert to a simple dictionary: {"Happy": 5, "Sad": 2...}
+        stats = {row["mood"]: row["count"] for row in rows}
+
+    return jsonify(stats), 200
+
+
+@app.route("/api/stats/mood-trends", methods=["GET"])
+def get_mood_trends():
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        # Get the last 7 entries in chronological order
+        query = "SELECT mood, timestamp FROM mood_logs ORDER BY timestamp ASC LIMIT 7"
+        rows = cursor.execute(query).fetchall()
+
+        # Mapping moods to numbers for a graph: Happy=3, Neutral=2, Anxious=1, Sad=0
+        mood_map = {"Happy": 3, "Neutral": 2, "Anxious": 1, "Sad": 0}
+        trend_data = [
+            {
+                "mood": row["mood"],
+                "value": mood_map.get(row["mood"], 1),
+                "date": row["timestamp"],
+            }
+            for row in rows
+        ]
+
+    return jsonify(trend_data), 200
+
+
+@app.route("/api/stats/sleep-correlation", methods=["GET"])
+def get_sleep_correlation():
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        # Calculate the average sleep for each mood
+        query = (
+            "SELECT mood, AVG(sleep_hours) as avg_sleep FROM mood_logs GROUP BY mood"
+        )
+        rows = cursor.execute(query).fetchall()
+
+        # Format: {"Happy": 7.5, "Sad": 4.8}
+        correlation = {row["mood"].title(): round(row["avg_sleep"], 1) for row in rows}
+
+    return jsonify(correlation), 200
+
+
+@app.route("/api/stats/advanced", methods=["GET"])
+def get_advanced_stats():
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            # 1. Exercise Impact
+            exercise_mood = cursor.execute("""
+                SELECT exercise, 
+                       COUNT(*) as total,
+                       SUM(CASE WHEN mood IN ('Happy', 'happy') THEN 1 ELSE 0 END) as happy_count
+                FROM mood_logs 
+                GROUP BY exercise
+            """).fetchall()
+
+            # 2. Peak Logging Time (Ensuring we handle empty DB)
+            peak_query = cursor.execute("""
+                SELECT STRFTIME('%H', timestamp) as hour, COUNT(*) as count 
+                FROM mood_logs 
+                WHERE timestamp IS NOT NULL
+                GROUP BY hour 
+                ORDER BY count DESC LIMIT 1
+            """).fetchone()
+
+            # 3. Total Streak
+            streak = cursor.execute(
+                "SELECT COUNT(DISTINCT DATE(timestamp)) FROM mood_logs"
+            ).fetchone()[0]
+
+        # FALLBACKS: If the DB is empty, provide safe defaults
+        return (
+            jsonify(
+                {
+                    "exercise_impact": (
+                        [dict(row) for row in exercise_mood] if exercise_mood else []
+                    ),
+                    "peak_hour": peak_query["hour"] if peak_query else "N/A",
+                    "streak": streak if streak else 0,
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        print(f"Stats Error: {e}")
+        return jsonify({"error": "Could not calculate stats"}), 500
+
+
 if __name__ == "__main__":
     # Bandit-safe debug handling
     debug_mode = os.getenv("FLASK_DEBUG", "False").lower() == "true"
