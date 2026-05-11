@@ -4,6 +4,7 @@ import { Navbar, Footer } from './components/Layout'
 import MoodForm from './MoodForm'
 import HistoryList from './HistoryList'
 import TrendsChart from './TrendsChart'
+import Resources from './pages/Resources';
 
 // Temporary Placeholder components for new pages
 const AnalyticsPage = () => (
@@ -109,7 +110,7 @@ function App() {
             <Route path="/analytics" element={<AnalyticsPage />} />
 
             {/* RESOURCES ROUTE */}
-            <Route path="/resources" element={<ResourcesPage />} />
+            <Route path="/resources" element={<Resources />} />
           </Routes>
           
         </main>
