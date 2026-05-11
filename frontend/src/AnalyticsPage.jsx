@@ -5,10 +5,9 @@ function AnalyticsPage() {
   const [correlations, setCorrelations] = useState({});
   const [advanced, setAdvanced] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [words, setWords] = useState([]);
 
   useEffect(() => {
-    // Independent fetches to ensure one failure doesn't break the whole page
-    
     // 1. Fetch Sleep Correlation
     fetch('http://127.0.0.1:5000/api/stats/sleep-correlation')
       .then(res => res.ok ? res.json() : {})
@@ -27,6 +26,12 @@ function AnalyticsPage() {
         console.error("Advanced API Error:", err);
         setLoading(false);
       });
+
+    // 3. Fetch Word Cloud Data
+    fetch('http://127.0.0.1:5000/api/stats/word-cloud')
+      .then(res => res.json())
+      .then(data => setWords(data))
+      .catch(err => console.error("Word Cloud API Error:", err));
   }, []);
 
   // --- STYLES ---
@@ -89,7 +94,7 @@ function AnalyticsPage() {
         Advanced Analytics
       </h1>
 
-      {/* SECTION 1: MOOD PROGRESSION (FR4) */}
+      {/* SECTION 1: MOOD PROGRESSION */}
       <div style={cardStyle}>
         <div style={{ marginBottom: '30px' }}>
           <h4 style={labelStyle}>Mood Progression Trends</h4>
@@ -106,7 +111,6 @@ function AnalyticsPage() {
         <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '25px' }}>Identifying correlations between habits and mental wellness.</p>
         
         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-          {/* Exercise KPI */}
           <div style={insightBoxStyle}>
             <span style={{ fontSize: '1.8rem' }}>🏃‍♂️</span>
             <div style={{ marginTop: '10px' }}>
@@ -117,7 +121,6 @@ function AnalyticsPage() {
             </div>
           </div>
 
-          {/* Consistency KPI */}
           <div style={insightBoxStyle}>
             <span style={{ fontSize: '1.8rem' }}>🔥</span>
             <div style={{ marginTop: '10px' }}>
@@ -127,7 +130,6 @@ function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Peak Logging Hour Banner */}
         {advanced && (
           <div style={tipBannerStyle}>
             <span style={{ fontSize: '1.5rem' }}>💡</span>
@@ -140,11 +142,45 @@ function AnalyticsPage() {
         )}
       </div>
 
+      {/* NEW SECTION: KEY THEMES (Word Cloud) */}
+      <div style={cardStyle}>
+        <h4 style={labelStyle}>Key Themes & Topics</h4>
+        <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '25px' }}>
+          Common topics extracted from your journal entries using text frequency analysis.
+        </p>
+        <div style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: '20px', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          padding: '20px',
+          backgroundColor: '#f8fafc',
+          borderRadius: '20px'
+        }}>
+          {words.length > 0 ? (
+            words.map((w, i) => (
+              <span key={i} style={{
+                fontSize: `${Math.min(1 + w.value * 0.25, 2.8)}rem`, 
+                fontWeight: '800',
+                color: w.value > 2 ? '#6366f1' : '#94a3b8',
+                opacity: Math.min(0.6 + w.value * 0.1, 1),
+                padding: '0 10px',
+                transition: 'all 0.3s ease'
+              }}>
+                {w.text}
+              </span>
+            ))
+          ) : (
+            <p style={{ color: '#94a3b8' }}>Log more journal notes to reveal common themes.</p>
+          )}
+        </div>
+      </div>
+
       {/* SECTION 3: SLEEP CORRELATION */}
       <div style={cardStyle}>
         <h4 style={labelStyle}>Sleep vs. Mood Correlation</h4>
         <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '25px' }}>Average rest hours associated with each emotional state.</p>
-        
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
