@@ -39,7 +39,7 @@ function AnalyticsPage({ user }) {
       .catch(err => console.error("Word Cloud API Error:", err));
 
     // 3. Dependency array: Re-run if the user changes
-  }, [user.user_id]);
+  }, [user]);
 
   // --- STYLES (Untouched) ---
   const cardStyle = { padding: '40px', backgroundColor: '#fff', borderRadius: '28px', border: '1px solid #f1f5f9', marginBottom: '30px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.04)', textAlign: 'left' };

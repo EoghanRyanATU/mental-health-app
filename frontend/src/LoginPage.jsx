@@ -39,7 +39,7 @@ function LoginPage({ onLoginSuccess }) {
       } else {
         setError(data.error || "Authentication failed");
       }
-    } catch (err) {
+    } catch {
       setError("Server is unreachable. Is Flask running?");
     } finally {
       setLoading(false);

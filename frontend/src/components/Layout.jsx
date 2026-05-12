@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 
 // Updated props to include username and onLogout from App.jsx
-export const Navbar = ({ isLoggedIn, username, onLogout }) => (
+export const Navbar = ({ username, onLogout }) => (
   <nav style={{ 
     backgroundColor: '#0f172a', // Solid Deep Navy
     padding: '1rem 10%', 
