@@ -1,26 +1,27 @@
 import { useState, useEffect } from 'react'
 
-function HistoryList() {
+// 1. Added 'user' to the props
+function HistoryList({ user }) {
   const [history, setHistory] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
   const [expandedId, setExpandedId] = useState(null)
-
-  // --- EDITING STATE ---
   const [editingId, setEditingId] = useState(null);
   const [tempNote, setTempNote] = useState("");
 
+  // 2. Updated fetch to include user_id as a query parameter
   const fetchHistory = () => {
-    fetch('http://127.0.0.1:5000/api/history')
+    if (!user) return;
+    fetch(`http://127.0.0.1:5000/api/history?user_id=${user.user_id}`)
       .then(res => res.json())
       .then(data => setHistory(data))
       .catch(err => console.error("Fetch error:", err))
   }
 
-  useEffect(() => { fetchHistory() }, [])
+  useEffect(() => { fetchHistory() }, [user.user_id])
   
   // --- EDIT FUNCTIONS ---
   const startEditing = (e, log) => {
-    e.stopPropagation(); // Stop card from collapsing
+    e.stopPropagation(); 
     setEditingId(log.id);
     setTempNote(log.note || "");
   };
@@ -52,7 +53,6 @@ function HistoryList() {
   };
 
   const toggleExpand = (id) => {
-    // Prevent collapsing if we are currently editing this specific card
     if (editingId === id) return;
     setExpandedId(expandedId === id ? null : id)
   }
@@ -69,10 +69,13 @@ function HistoryList() {
     }
   }
 
+  // 3. Updated Wipe Timeline to only delete THIS user's data
   const clearAll = async () => {
     if (window.confirm("This will erase your entire timeline. Are you sure?")) {
       try {
-        const res = await fetch('http://127.0.0.1:5000/api/history/wipe', { method: 'DELETE' });
+        const res = await fetch(`http://127.0.0.1:5000/api/history/wipe?user_id=${user.user_id}`, { 
+          method: 'DELETE' 
+        });
         if (res.ok) setHistory([]);
       } catch (err) {
         console.error("Wipe request failed:", err);
@@ -146,7 +149,6 @@ function HistoryList() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                         <h4 style={labelStyle}>Diary Reflection</h4>
                         
-                        {/* EDIT TOGGLE */}
                         {editingId !== log.id ? (
                           <button onClick={(e) => startEditing(e, log)} style={editLinkStyle}>Edit Note</button>
                         ) : (
@@ -154,13 +156,12 @@ function HistoryList() {
                         )}
                       </div>
 
-                      {/* CONDITIONAL RENDER: TEXT VS EDIT AREA */}
                       {editingId === log.id ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                           <textarea 
                             value={tempNote}
                             onChange={(e) => setTempNote(e.target.value)}
-                            onClick={(e) => e.stopPropagation()} // Stop click-to-collapse
+                            onClick={(e) => e.stopPropagation()} 
                             style={editAreaStyle}
                           />
                           <button onClick={(e) => saveEdit(e, log.id)} style={saveButtonStyle}>Save Changes</button>
@@ -198,41 +199,10 @@ function HistoryList() {
   )
 }
 
-// --- STYLING CONSTANTS (Existing + New Edit Styles) ---
-
-const editAreaStyle = {
-  width: '100%',
-  minHeight: '120px',
-  padding: '12px',
-  borderRadius: '12px',
-  border: '2px solid #6366f1',
-  fontFamily: 'inherit',
-  fontSize: '1rem',
-  outline: 'none',
-  backgroundColor: '#fff'
-};
-
-const saveButtonStyle = {
-  backgroundColor: '#6366f1',
-  color: '#fff',
-  border: 'none',
-  padding: '8px 16px',
-  borderRadius: '8px',
-  fontWeight: 'bold',
-  cursor: 'pointer',
-  alignSelf: 'flex-end'
-};
-
-const editLinkStyle = {
-  background: 'none',
-  border: 'none',
-  color: '#6366f1',
-  fontSize: '0.8rem',
-  fontWeight: '600',
-  cursor: 'pointer',
-  textDecoration: 'underline'
-};
-
+// --- STYLING CONSTANTS (Stay the same) ---
+const editAreaStyle = { width: '100%', minHeight: '120px', padding: '12px', borderRadius: '12px', border: '2px solid #6366f1', fontFamily: 'inherit', fontSize: '1rem', outline: 'none', backgroundColor: '#fff' };
+const saveButtonStyle = { backgroundColor: '#6366f1', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', alignSelf: 'flex-end' };
+const editLinkStyle = { background: 'none', border: 'none', color: '#6366f1', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' };
 const timelineWrapperStyle = { position: 'relative', display: 'flex', flexDirection: 'column', gap: '40px', paddingBottom: '20px' };
 const verticalLineStyle = { position: 'absolute', left: '20px', top: '10px', bottom: '10px', width: '2px', backgroundColor: '#e2e8f0', zIndex: 0 };
 const dotStyle = { position: 'absolute', left: '11px', top: '22px', width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#fff', border: '4px solid #6366f1', zIndex: 1, boxShadow: '0 0 0 4px #f1f5f9' };

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-function TrendsChart() {
+// 1. Added 'user' prop to handle data isolation
+function TrendsChart({ user }) {
   const [chartData, setChartData] = useState([]);
 
-  // Mapping mood strings to numbers to fulfill FR5 (Data Visualization)
   const moodMap = {
     'Happy': 4,
     'Neutral': 3,
@@ -13,26 +13,28 @@ function TrendsChart() {
   };
 
   useEffect(() => {
-    // Fetch real logs from the /api/history route 
-    fetch('http://127.0.0.1:5000/api/history')
+    // 2. Updated fetch to include the specific user_id
+    if (!user) return;
+    
+    fetch(`http://127.0.0.1:5000/api/history?user_id=${user.user_id}`)
       .then(res => res.json())
       .then(data => {
-        // Data Mapping: Convert DB strings to numeric Chart objects
         const formattedData = data.map(log => ({
-          // Extracts the YYYY-MM-DD date from the timestamp
           date: log.timestamp.split(' ')[0], 
           moodScore: moodMap[log.mood] || 0,
           originalMood: log.mood
-        })).reverse(); // Reverse so oldest is on the left, newest on the right
+        })).reverse(); 
 
         setChartData(formattedData);
       })
       .catch(err => console.error("Chart data mapping error:", err));
-  }, []);
+      
+    // 3. Re-run effect if the user changes
+  }, [user.user_id]);
 
   return (
     <div style={{ width: '100%', height: 300, backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #ddd', marginTop: '20px' }}>
-      <h4 style={{ color: '#2c3e50', marginBottom: '10px' }}>Mood Trends (Live Data)</h4>
+      <h4 style={{ color: '#2c3e50', marginBottom: '10px' }}>Your Personal Mood Trends</h4>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
