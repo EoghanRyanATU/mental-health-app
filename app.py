@@ -247,5 +247,6 @@ def handle_log_action(log_id):
 
 
 if __name__ == "__main__":
-    init_db()
-    app.run(debug=True, port=5000)
+    init_db()  # <--- CRITICAL: Initialize database before running
+    debug_mode = os.getenv("FLASK_DEBUG", "False").lower() == "true"
+    app.run(debug=debug_mode, port=5000)
