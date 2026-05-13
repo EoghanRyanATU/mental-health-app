@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
-export const Navbar = ({ isLoggedIn, setIsLoggedIn }) => (
+// Updated props to include username and onLogout from App.jsx
+export const Navbar = ({ username, onLogout }) => (
   <nav style={{ 
     backgroundColor: '#0f172a', // Solid Deep Navy
     padding: '1rem 10%', 
@@ -10,7 +11,7 @@ export const Navbar = ({ isLoggedIn, setIsLoggedIn }) => (
     position: 'sticky',
     top: 0,
     zIndex: 100,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)' // Stronger shadow for the solid look
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)' 
   }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
       <span style={{ fontSize: '1.5rem' }}>🧠</span>
@@ -18,14 +19,16 @@ export const Navbar = ({ isLoggedIn, setIsLoggedIn }) => (
     </div>
 
     <div style={{ display: 'flex', gap: '25px', alignItems: 'center' }}>
-      {/* These Links match the routes we will create in App.jsx */}
       <Link to="/" style={navLinkStyle}>Dashboard</Link>
       <Link to="/journal" style={navLinkStyle}>Journal</Link>
       <Link to="/analytics" style={navLinkStyle}>Analytics</Link>
       <Link to="/resources" style={navLinkStyle}>Resources</Link>
       
+      {/* Optional: Displaying username next to logout for the report visual */}
+      {username && <span style={{ color: '#6366f1', fontSize: '0.85rem', fontWeight: '600' }}>{username}</span>}
+
       <button 
-        onClick={() => setIsLoggedIn(!isLoggedIn)}
+        onClick={onLogout}
         style={{ 
           backgroundColor: '#6366f1', 
           color: '#fff', 
@@ -37,7 +40,7 @@ export const Navbar = ({ isLoggedIn, setIsLoggedIn }) => (
           cursor: 'pointer'
         }}
       >
-        {isLoggedIn ? 'Logout' : 'Login'}
+        Logout
       </button>
     </div>
   </nav>
@@ -45,7 +48,7 @@ export const Navbar = ({ isLoggedIn, setIsLoggedIn }) => (
 
 const navLinkStyle = { 
   textDecoration: 'none', 
-  color: '#cbd5e1', // Light grey text for the dark background
+  color: '#cbd5e1', 
   fontWeight: '500', 
   fontSize: '0.9rem',
   transition: 'color 0.2s'

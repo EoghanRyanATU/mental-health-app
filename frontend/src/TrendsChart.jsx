@@ -1,38 +1,40 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-function TrendsChart() {
+// 1. FIX: Move moodMap OUTSIDE the function. 
+// This tells React it is a static constant and doesn't need to be in useEffect dependencies.
+const moodMap = {
+  'Happy': 4,
+  'Neutral': 3,
+  'Anxious': 2,
+  'Sad': 1
+};
+
+function TrendsChart({ user }) {
   const [chartData, setChartData] = useState([]);
 
-  // Mapping mood strings to numbers to fulfill FR5 (Data Visualization)
-  const moodMap = {
-    'Happy': 4,
-    'Neutral': 3,
-    'Anxious': 2,
-    'Sad': 1
-  };
-
   useEffect(() => {
-    // Fetch real logs from the /api/history route 
-    fetch('http://127.0.0.1:5000/api/history')
+    if (!user || !user.user_id) return;
+    
+    fetch(`http://127.0.0.1:5000/api/history?user_id=${user.user_id}`)
       .then(res => res.json())
       .then(data => {
-        // Data Mapping: Convert DB strings to numeric Chart objects
         const formattedData = data.map(log => ({
-          // Extracts the YYYY-MM-DD date from the timestamp
           date: log.timestamp.split(' ')[0], 
           moodScore: moodMap[log.mood] || 0,
           originalMood: log.mood
-        })).reverse(); // Reverse so oldest is on the left, newest on the right
+        })).reverse(); 
 
         setChartData(formattedData);
       })
       .catch(err => console.error("Chart data mapping error:", err));
-  }, []);
+      
+    // 2. FIX: Update dependency array to [user] to satisfy the exhaustive-deps rule.
+  }, [user]);
 
   return (
     <div style={{ width: '100%', height: 300, backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #ddd', marginTop: '20px' }}>
-      <h4 style={{ color: '#2c3e50', marginBottom: '10px' }}>Mood Trends (Live Data)</h4>
+      <h4 style={{ color: '#2c3e50', marginBottom: '10px', textAlign: 'left' }}>Your Personal Mood Trends</h4>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -42,9 +44,9 @@ function TrendsChart() {
           <Line 
             type="monotone" 
             dataKey="moodScore" 
-            stroke="#646cff" 
+            stroke="#6366f1" 
             strokeWidth={3} 
-            dot={{ r: 6, fill: '#646cff' }}
+            dot={{ r: 6, fill: '#6366f1' }}
             activeDot={{ r: 8 }}
           />
         </LineChart>

@@ -1,24 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import TrendsChart from './TrendsChart';
 
-function AnalyticsPage() {
+// 1. Added { user } prop to accept the session from App.jsx
+function AnalyticsPage({ user }) {
   const [correlations, setCorrelations] = useState({});
   const [advanced, setAdvanced] = useState(null);
   const [loading, setLoading] = useState(true);
   const [words, setWords] = useState([]);
 
   useEffect(() => {
-    // 1. Fetch Sleep Correlation
-    fetch('http://127.0.0.1:5000/api/stats/sleep-correlation')
+    // Guard clause: Ensure we have a user before fetching
+    if (!user || !user.user_id) return;
+
+    // 2. Updated all fetches to include the user_id query parameter
+    
+    // Fetch Sleep Correlation
+    fetch(`http://127.0.0.1:5000/api/stats/sleep-correlation?user_id=${user.user_id}`)
       .then(res => res.ok ? res.json() : {})
       .then(data => setCorrelations(data))
       .catch(err => console.error("Sleep API Error:", err));
 
-    // 2. Fetch Advanced Stats (Exercise, Streak, Peak Hour)
-    fetch('http://127.0.0.1:5000/api/stats/advanced')
+    // Fetch Advanced Stats
+    fetch(`http://127.0.0.1:5000/api/stats/advanced?user_id=${user.user_id}`)
       .then(res => res.ok ? res.json() : null)
       .then(data => {
-        console.log("Advanced Data Received:", data);
         setAdvanced(data);
         setLoading(false);
       })
@@ -27,66 +32,23 @@ function AnalyticsPage() {
         setLoading(false);
       });
 
-    // 3. Fetch Word Cloud Data
-    fetch('http://127.0.0.1:5000/api/stats/word-cloud')
+    // Fetch Word Cloud Data
+    fetch(`http://127.0.0.1:5000/api/stats/word-cloud?user_id=${user.user_id}`)
       .then(res => res.json())
       .then(data => setWords(data))
       .catch(err => console.error("Word Cloud API Error:", err));
-  }, []);
 
-  // --- STYLES ---
-  const cardStyle = { 
-    padding: '40px', 
-    backgroundColor: '#fff', 
-    borderRadius: '28px', 
-    border: '1px solid #f1f5f9', 
-    marginBottom: '30px',
-    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.04)',
-    textAlign: 'left'
-  };
+    // 3. Dependency array: Re-run if the user changes
+  }, [user]);
 
-  const statBoxStyle = { 
-    padding: '25px', 
-    backgroundColor: '#f8fafc', 
-    borderRadius: '20px', 
-    border: '1px solid #e2e8f0', 
-    textAlign: 'center'
-  };
+  // --- STYLES (Untouched) ---
+  const cardStyle = { padding: '40px', backgroundColor: '#fff', borderRadius: '28px', border: '1px solid #f1f5f9', marginBottom: '30px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.04)', textAlign: 'left' };
+  const statBoxStyle = { padding: '25px', backgroundColor: '#f8fafc', borderRadius: '20px', border: '1px solid #e2e8f0', textAlign: 'center' };
+  const insightBoxStyle = { padding: '25px', backgroundColor: '#fff', borderRadius: '20px', border: '1px solid #f1f5f9', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', flex: 1, minWidth: '200px' };
+  const labelStyle = { fontSize: '0.75rem', color: '#6366f1', textTransform: 'uppercase', marginBottom: '10px', fontWeight: '800', letterSpacing: '0.1em' };
+  const tipBannerStyle = { marginTop: '30px', padding: '20px', backgroundColor: '#f5f3ff', borderRadius: '16px', color: '#5b21b6', fontSize: '0.95rem', border: '1px solid #ddd6fe', display: 'flex', alignItems: 'center', gap: '15px' };
 
-  const insightBoxStyle = {
-    padding: '25px',
-    backgroundColor: '#fff',
-    borderRadius: '20px',
-    border: '1px solid #f1f5f9',
-    textAlign: 'center',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-    flex: 1,
-    minWidth: '200px'
-  };
-
-  const labelStyle = { 
-    fontSize: '0.75rem', 
-    color: '#6366f1', 
-    textTransform: 'uppercase', 
-    marginBottom: '10px', 
-    fontWeight: '800', 
-    letterSpacing: '0.1em' 
-  };
-
-  const tipBannerStyle = {
-    marginTop: '30px',
-    padding: '20px',
-    backgroundColor: '#f5f3ff',
-    borderRadius: '16px',
-    color: '#5b21b6',
-    fontSize: '0.95rem',
-    border: '1px solid #ddd6fe',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '15px'
-  };
-
-  if (loading) return <div style={{padding: '100px', textAlign: 'center', color: '#64748b'}}>Calculating deep insights...</div>;
+  if (loading) return <div style={{padding: '100px', textAlign: 'center', color: '#64748b'}}>Calculating deep insights for {user.username}...</div>;
 
   return (
     <div style={{ width: '100%', maxWidth: '1100px', margin: '0 auto' }}>
@@ -101,7 +63,8 @@ function AnalyticsPage() {
           <p style={{ color: '#64748b', fontSize: '0.95rem' }}>Visualizing emotional variance over your last 7 check-ins.</p>
         </div>
         <div style={{ width: '100%', minHeight: '250px', position: 'relative' }}>
-          <TrendsChart />
+          {/* 4. Pass user to the TrendsChart for isolation */}
+          <TrendsChart user={user} />
         </div>
       </div>
 
@@ -142,7 +105,7 @@ function AnalyticsPage() {
         )}
       </div>
 
-      {/* NEW SECTION: KEY THEMES (Word Cloud) */}
+      {/* SECTION 3: KEY THEMES (Word Cloud) */}
       <div style={cardStyle}>
         <h4 style={labelStyle}>Key Themes & Topics</h4>
         <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '25px' }}>
@@ -177,7 +140,7 @@ function AnalyticsPage() {
         </div>
       </div>
 
-      {/* SECTION 3: SLEEP CORRELATION */}
+      {/* SECTION 4: SLEEP CORRELATION */}
       <div style={cardStyle}>
         <h4 style={labelStyle}>Sleep vs. Mood Correlation</h4>
         <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '25px' }}>Average rest hours associated with each emotional state.</p>

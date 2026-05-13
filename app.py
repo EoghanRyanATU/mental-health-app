@@ -1,281 +1,10 @@
-# import os
-# import sqlite3
-# from flask import Flask, jsonify, request
-# from flask_cors import CORS
-# import re
-# from collections import Counter
-
-# app = Flask(__name__)
-# CORS(app)
-
-# DB_FILE = "mental_health.db"
-
-
-# def get_db_connection():
-#     conn = sqlite3.connect(DB_FILE)
-#     conn.row_factory = sqlite3.Row
-#     return conn
-
-
-# # Section 3.3.4: Database Initialization
-# def init_db():
-#     with get_db_connection() as conn:
-#         # Maintaining Activity Tags (FR4) and Insight storage
-#         conn.execute("""
-#             CREATE TABLE IF NOT EXISTS mood_logs (
-#                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-#                 mood TEXT NOT NULL,
-#                 note TEXT,
-#                 insight TEXT,
-#                 sleep_hours INTEGER DEFAULT 0,
-#                 exercise BOOLEAN DEFAULT 0,
-#                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-#             )
-#         """)
-#         conn.commit()
-
-
-# # Rule-Based Insight Engine Logic (FR3)
-# def get_mood_insight(mood, sleep, exercise):
-#     messages = []
-
-#     # 1. Behavioral Rule: Sleep
-#     if sleep < 5:
-#         messages.append(
-#             "You're low on sleep! Try to prioritize a nap or an earlier bedtime."
-#         )
-
-#     # 2. Behavioral Rule: Exercise
-#     if not exercise:
-#         messages.append("A bit of light movement might help boost your mood.")
-
-#     # 3. Emotional Rule: Mood
-#     mood_insights = {
-#         "Happy": "That's great! Take a moment to appreciate what made you smile today.",
-#         "Neutral": "Consistency is key. A steady day is a good day.",
-#         "Anxious": "Try the 4-7-8 breathing technique: Inhale for 4, hold for 7, exhale for 8.",
-#         "Sad": "It's okay to not be okay. Consider reaching out to a friend or writing in your journal.",
-#     }
-#     messages.append(mood_insights.get(mood, "Keep tracking to see your patterns!"))
-
-#     # Join all collected advice into one string
-#     return " ".join(messages)
-
-
-# @app.route("/api/health", methods=["GET"])
-# def health_check():
-#     return jsonify({"status": "online", "database": "connected"}), 200
-
-
-# @app.route("/api/log", methods=["POST"])
-# def log_mood():
-#     data = request.json
-#     mood = data.get("mood")
-#     note = data.get("note")
-#     sleep = data.get("sleep_hours", 0)
-#     exercise = data.get("exercise", False)
-
-#     # Process through the Insight Engine (FR3)
-#     selected_insight = get_mood_insight(mood, sleep, exercise)
-
-#     # Save to SQLite (FR7)
-#     with get_db_connection() as conn:
-#         cursor = conn.cursor()
-#         cursor.execute(
-#             "INSERT INTO mood_logs (mood, note, insight, sleep_hours, exercise) VALUES (?, ?, ?, ?, ?)",
-#             (mood, note, selected_insight, sleep, exercise),
-#         )
-#         conn.commit()
-
-#     return jsonify({"status": "success", "insight": selected_insight}), 201
-
-
-# @app.route("/api/log/<int:log_id>", methods=["PUT"])
-# def update_log(log_id):
-#     data = request.json
-#     new_note = data.get("note")
-
-#     with get_db_connection() as conn:
-#         # Update only the note for that specific ID
-#         conn.execute("UPDATE mood_logs SET note = ? WHERE id = ?", (new_note, log_id))
-#         conn.commit()
-
-#     return jsonify({"status": "success", "message": "Entry updated successfully"}), 200
-
-
-# @app.route("/api/history", methods=["GET"])
-# def get_history():
-#     search_query = request.args.get("q", "")  # Get ?q=keyword from URL
-
-#     with get_db_connection() as conn:
-#         cursor = conn.cursor()
-
-#         if search_query:
-#             # SQL search through notes and moods
-#             query = "SELECT * FROM mood_logs WHERE note LIKE ? OR mood LIKE ? ORDER BY timestamp DESC"
-#             rows = cursor.execute(
-#                 query, (f"%{search_query}%", f"%{search_query}%")
-#             ).fetchall()
-#         else:
-#             rows = cursor.execute(
-#                 "SELECT * FROM mood_logs ORDER BY timestamp DESC"
-#             ).fetchall()
-
-#     return jsonify([dict(row) for row in rows]), 200
-
-
-# @app.route("/api/log/<int:log_id>", methods=["DELETE"])
-# def delete_log(log_id):
-#     with get_db_connection() as conn:
-#         conn.execute("DELETE FROM mood_logs WHERE id = ?", (log_id,))
-#         conn.commit()
-#     return jsonify({"message": f"Log {log_id} deleted successfully"}), 200
-
-
-# @app.route("/api/history/wipe", methods=["DELETE"])
-# def wipe_history():
-#     with get_db_connection() as conn:
-#         conn.execute("DELETE FROM mood_logs")
-#         conn.commit()
-#     return jsonify({"status": "success", "message": "All logs deleted"}), 200
-
-
-# @app.route("/api/stats/mood-counts", methods=["GET"])
-# def get_mood_stats():
-#     with get_db_connection() as conn:
-#         cursor = conn.cursor()
-#         # Aggregates counts of each mood type
-#         query = "SELECT mood, COUNT(*) as count FROM mood_logs GROUP BY mood"
-#         rows = cursor.execute(query).fetchall()
-
-#         # Convert to a simple dictionary: {"Happy": 5, "Sad": 2...}
-#         stats = {row["mood"]: row["count"] for row in rows}
-
-#     return jsonify(stats), 200
-
-
-# @app.route("/api/stats/mood-trends", methods=["GET"])
-# def get_mood_trends():
-#     with get_db_connection() as conn:
-#         cursor = conn.cursor()
-#         # Get the last 7 entries in chronological order
-#         query = "SELECT mood, timestamp FROM mood_logs ORDER BY timestamp ASC LIMIT 7"
-#         rows = cursor.execute(query).fetchall()
-
-#         # Mapping moods to numbers for a graph: Happy=3, Neutral=2, Anxious=1, Sad=0
-#         mood_map = {"Happy": 3, "Neutral": 2, "Anxious": 1, "Sad": 0}
-#         trend_data = [
-#             {
-#                 "mood": row["mood"],
-#                 "value": mood_map.get(row["mood"], 1),
-#                 "date": row["timestamp"],
-#             }
-#             for row in rows
-#         ]
-
-#     return jsonify(trend_data), 200
-
-
-# @app.route("/api/stats/sleep-correlation", methods=["GET"])
-# def get_sleep_correlation():
-#     with get_db_connection() as conn:
-#         cursor = conn.cursor()
-#         # Calculate the average sleep for each mood
-#         query = (
-#             "SELECT mood, AVG(sleep_hours) as avg_sleep FROM mood_logs GROUP BY mood"
-#         )
-#         rows = cursor.execute(query).fetchall()
-
-#         # Format: {"Happy": 7.5, "Sad": 4.8}
-#         correlation = {row["mood"].title(): round(row["avg_sleep"], 1) for row in rows}
-
-#     return jsonify(correlation), 200
-
-
-# @app.route("/api/stats/advanced", methods=["GET"])
-# def get_advanced_stats():
-#     try:
-#         with get_db_connection() as conn:
-#             cursor = conn.cursor()
-
-#             # 1. Exercise Impact
-#             exercise_mood = cursor.execute("""
-#                 SELECT exercise,
-#                        COUNT(*) as total,
-#                        SUM(CASE WHEN mood IN ('Happy', 'happy') THEN 1 ELSE 0 END) as happy_count
-#                 FROM mood_logs
-#                 GROUP BY exercise
-#             """).fetchall()
-
-#             # 2. Peak Logging Time (Ensuring we handle empty DB)
-#             peak_query = cursor.execute("""
-#                 SELECT STRFTIME('%H', timestamp) as hour, COUNT(*) as count
-#                 FROM mood_logs
-#                 WHERE timestamp IS NOT NULL
-#                 GROUP BY hour
-#                 ORDER BY count DESC LIMIT 1
-#             """).fetchone()
-
-#             # 3. Total Streak
-#             streak = cursor.execute(
-#                 "SELECT COUNT(DISTINCT DATE(timestamp)) FROM mood_logs"
-#             ).fetchone()[0]
-
-#         # FALLBACKS: If the DB is empty, provide safe defaults
-#         return (
-#             jsonify(
-#                 {
-#                     "exercise_impact": (
-#                         [dict(row) for row in exercise_mood] if exercise_mood else []
-#                     ),
-#                     "peak_hour": peak_query["hour"] if peak_query else "N/A",
-#                     "streak": streak if streak else 0,
-#                 }
-#             ),
-#             200,
-#         )
-#     except Exception as e:
-#         print(f"Stats Error: {e}")
-#         return jsonify({"error": "Could not calculate stats"}), 500
-
-
-# @app.route("/api/stats/word-cloud", methods=["GET"])
-# def get_word_cloud():
-#     with get_db_connection() as conn:
-#         cursor = conn.cursor()
-#         # Fetch all notes
-#         rows = cursor.execute("SELECT note FROM mood_logs WHERE note IS NOT NULL").fetchall()
-
-#         # 1. Combine all notes into one long string
-#         text = " ".join([row["note"].lower() for row in rows])
-
-#         # 2. Clean text: remove punctuation and split into words
-#         words = re.findall(r'\b\w{4,}\b', text) # Only words with 4+ letters
-
-#         # 3. Filter out "Stop Words" (common boring words)
-#         stop_words = {'with', 'this', 'that', 'from', 'have', 'just', 'feel', 'felt', 'been', 'today', 'really'}
-#         filtered_words = [w for w in words if w not in stop_words]
-
-#         # 4. Count top 15 words
-#         most_common = Counter(filtered_words).most_common(15)
-
-#         # Format for frontend: [{"text": "work", "value": 10}, ...]
-#         cloud_data = [{"text": word, "value": count} for word, count in most_common]
-
-#     return jsonify(cloud_data), 200
-
-
-# if __name__ == "__main__":
-#     # Bandit-safe debug handling
-#     debug_mode = os.getenv("FLASK_DEBUG", "False").lower() == "true"
-#     app.run(debug=debug_mode, port=5000)
-
 import os
 import sqlite3
 import re
 from collections import Counter
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 CORS(app)
@@ -289,18 +18,30 @@ def get_db_connection():
     return conn
 
 
-# --- Section 3.3.4: Database Initialization ---
+# --- Database Initialization ---
 def init_db():
     with get_db_connection() as conn:
+        # 1. Credentials Table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL
+            )
+        """)
+
+        # 2. Main Data Table (Updated with user_id)
         conn.execute("""
             CREATE TABLE IF NOT EXISTS mood_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL, 
                 mood TEXT NOT NULL,
                 note TEXT,
                 insight TEXT,
                 sleep_hours INTEGER DEFAULT 0,
                 exercise BOOLEAN DEFAULT 0,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
             )
         """)
         conn.commit()
@@ -310,96 +51,126 @@ def init_db():
 def get_mood_insight(mood, sleep, exercise):
     messages = []
     if sleep < 5:
-        messages.append(
-            "You're low on sleep! Try to prioritize a nap or an earlier bedtime."
-        )
+        messages.append("You're low on sleep! Try to prioritize a nap.")
     if not exercise:
         messages.append("A bit of light movement might help boost your mood.")
 
     mood_insights = {
-        "Happy": "That's great! Take a moment to appreciate what made you smile today.",
+        "Happy": "That's great! Take a moment to appreciate what made you smile.",
         "Neutral": "Consistency is key. A steady day is a good day.",
-        "Anxious": "Try the 4-7-8 breathing technique: Inhale for 4, hold for 7, exhale for 8.",
+        "Anxious": "Try the 4-7-8 breathing technique to ground yourself.",
         "Sad": "It's okay to not be okay. Consider reaching out to a friend.",
     }
     messages.append(mood_insights.get(mood, "Keep tracking to see your patterns!"))
     return " ".join(messages)
 
 
-@app.route("/api/health", methods=["GET"])
-def health_check():
-    return jsonify({"status": "online", "database": "connected"}), 200
+# --- AUTHENTICATION ROUTES ---
+
+
+@app.route("/api/auth/signup", methods=["POST"])
+def signup():
+    data = request.json
+    username, password = data.get("username"), data.get("password")
+    if not username or not password:
+        return jsonify({"error": "Missing credentials"}), 400
+
+    hashed_pw = generate_password_hash(password)
+    try:
+        with get_db_connection() as conn:
+            conn.execute(
+                "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+                (username, hashed_pw),
+            )
+            conn.commit()
+        return jsonify({"status": "success"}), 201
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Username already exists"}), 400
+
+
+@app.route("/api/auth/login", methods=["POST"])
+def login():
+    data = request.json
+    username, password = data.get("username"), data.get("password")
+    with get_db_connection() as conn:
+        user = conn.execute(
+            "SELECT * FROM users WHERE username = ?", (username,)
+        ).fetchone()
+
+    if user and check_password_hash(user["password_hash"], password):
+        # We now return the user_id so the frontend can "tag" future requests
+        return (
+            jsonify({"status": "success", "username": username, "user_id": user["id"]}),
+            200,
+        )
+    return jsonify({"error": "Invalid username or password"}), 401
+
+
+# --- DATA ROUTES (Now Filtered by user_id) ---
 
 
 @app.route("/api/log", methods=["POST"])
 def log_mood():
     data = request.json
-    mood = data.get("mood")
-    note = data.get("note")
-    sleep = data.get("sleep_hours", 0)
+    user_id = data.get("user_id")  # Identify who is saving this
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    mood, note, sleep = data.get("mood"), data.get("note"), data.get("sleep_hours", 0)
     exercise = data.get("exercise", False)
     selected_insight = get_mood_insight(mood, sleep, exercise)
 
     with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO mood_logs (mood, note, insight, sleep_hours, exercise) VALUES (?, ?, ?, ?, ?)",
-            (mood, note, selected_insight, sleep, exercise),
+        conn.execute(
+            "INSERT INTO mood_logs (user_id, mood, note, insight, sleep_hours, exercise) VALUES (?, ?, ?, ?, ?, ?)",
+            (user_id, mood, note, selected_insight, sleep, exercise),
         )
         conn.commit()
     return jsonify({"status": "success", "insight": selected_insight}), 201
 
 
+@app.route("/api/health", methods=["GET"])
+def health_check():
+    # This is the "Ping" the frontend looks for to turn the dot green
+    return jsonify({"status": "online", "database": "connected"}), 200
+
+
 @app.route("/api/history", methods=["GET"])
 def get_history():
-    search_query = request.args.get("q", "")
+    user_id = request.args.get("user_id")  # Only get logs for this user
+    search = request.args.get("q", "")
+
     with get_db_connection() as conn:
-        cursor = conn.cursor()
-        if search_query:
-            query = "SELECT * FROM mood_logs WHERE note LIKE ? OR mood LIKE ? ORDER BY timestamp DESC"
-            rows = cursor.execute(
-                query, (f"%{search_query}%", f"%{search_query}%")
+        if search:
+            query = "SELECT * FROM mood_logs WHERE user_id = ? AND (note LIKE ? OR mood LIKE ?) ORDER BY timestamp DESC"
+            rows = conn.execute(
+                query, (user_id, f"%{search}%", f"%{search}%")
             ).fetchall()
         else:
-            rows = cursor.execute(
-                "SELECT * FROM mood_logs ORDER BY timestamp DESC"
+            rows = conn.execute(
+                "SELECT * FROM mood_logs WHERE user_id = ? ORDER BY timestamp DESC",
+                (user_id,),
             ).fetchall()
     return jsonify([dict(row) for row in rows]), 200
 
 
-# --- FR4: Advanced Analytics Routes ---
-
-
-@app.route("/api/stats/sleep-correlation", methods=["GET"])
-def get_sleep_correlation():
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        query = (
-            "SELECT mood, AVG(sleep_hours) as avg_sleep FROM mood_logs GROUP BY mood"
-        )
-        rows = cursor.execute(query).fetchall()
-        correlation = {row["mood"].title(): round(row["avg_sleep"], 1) for row in rows}
-    return jsonify(correlation), 200
-
-
 @app.route("/api/stats/advanced", methods=["GET"])
 def get_advanced_stats():
+    user_id = request.args.get("user_id")
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            exercise_mood = cursor.execute("""
-                SELECT exercise, COUNT(*) as total,
-                SUM(CASE WHEN mood IN ('Happy', 'happy') THEN 1 ELSE 0 END) as happy_count
-                FROM mood_logs GROUP BY exercise
-            """).fetchall()
-
-            peak_query = cursor.execute("""
-                SELECT STRFTIME('%H', timestamp) as hour FROM mood_logs 
-                WHERE timestamp IS NOT NULL GROUP BY hour ORDER BY COUNT(*) DESC LIMIT 1
-            """).fetchone()
-
+            exercise_mood = cursor.execute(
+                "SELECT exercise, COUNT(*) as total, SUM(CASE WHEN mood IN ('Happy', 'happy') THEN 1 ELSE 0 END) as happy_count FROM mood_logs WHERE user_id = ? GROUP BY exercise",
+                (user_id,),
+            ).fetchall()
+            peak_query = cursor.execute(
+                "SELECT STRFTIME('%H', timestamp) as hour FROM mood_logs WHERE user_id = ? AND timestamp IS NOT NULL GROUP BY hour ORDER BY COUNT(*) DESC LIMIT 1",
+                (user_id,),
+            ).fetchone()
             streak = cursor.execute(
-                "SELECT COUNT(DISTINCT DATE(timestamp)) FROM mood_logs"
+                "SELECT COUNT(DISTINCT DATE(timestamp)) FROM mood_logs WHERE user_id = ?",
+                (user_id,),
             ).fetchone()[0]
 
         return (
@@ -412,23 +183,31 @@ def get_advanced_stats():
             ),
             200,
         )
-    except Exception as e:
+    except:
         return jsonify({"exercise_impact": [], "peak_hour": "N/A", "streak": 0}), 200
+
+
+@app.route("/api/stats/sleep-correlation", methods=["GET"])
+def get_sleep_correlation():
+    user_id = request.args.get("user_id")  # Get the tag from the URL
+    with get_db_connection() as conn:
+        query = "SELECT mood, AVG(sleep_hours) as avg_sleep FROM mood_logs WHERE user_id = ? GROUP BY mood"
+        rows = conn.execute(query, (user_id,)).fetchall()
+        correlation = {row["mood"].title(): round(row["avg_sleep"], 1) for row in rows}
+    return jsonify(correlation), 200
 
 
 @app.route("/api/stats/word-cloud", methods=["GET"])
 def get_word_cloud():
+    user_id = request.args.get("user_id")
     try:
         with get_db_connection() as conn:
-            cursor = conn.cursor()
-            rows = cursor.execute(
-                "SELECT note FROM mood_logs WHERE note IS NOT NULL"
+            rows = conn.execute(
+                "SELECT note FROM mood_logs WHERE user_id = ? AND note IS NOT NULL",
+                (user_id,),
             ).fetchall()
-
-            # Defensive check: join only if note is not None
             text = " ".join([row["note"].lower() for row in rows if row["note"]])
             words = re.findall(r"\b\w{4,}\b", text)
-
             stop_words = {
                 "with",
                 "this",
@@ -443,32 +222,28 @@ def get_word_cloud():
                 "really",
                 "very",
             }
-            filtered_words = [w for w in words if w not in stop_words]
-
-            most_common = Counter(filtered_words).most_common(15)
-            cloud_data = [{"text": word, "value": count} for word, count in most_common]
-
+            filtered = [w for w in words if w not in stop_words]
+            cloud_data = [
+                {"text": word, "value": count}
+                for word, count in Counter(filtered).most_common(15)
+            ]
         return jsonify(cloud_data), 200
-    except Exception as e:
+    except:
         return jsonify([]), 200
 
 
-# Standard history routes (PUT/DELETE)
-@app.route("/api/log/<int:log_id>", methods=["PUT"])
-def update_log(log_id):
-    new_note = request.json.get("note")
+@app.route("/api/log/<int:log_id>", methods=["PUT", "DELETE"])
+def handle_log_action(log_id):
     with get_db_connection() as conn:
-        conn.execute("UPDATE mood_logs SET note = ? WHERE id = ?", (new_note, log_id))
+        if request.method == "PUT":
+            conn.execute(
+                "UPDATE mood_logs SET note = ? WHERE id = ?",
+                (request.json.get("note"), log_id),
+            )
+        else:
+            conn.execute("DELETE FROM mood_logs WHERE id = ?", (log_id,))
         conn.commit()
     return jsonify({"status": "success"}), 200
-
-
-@app.route("/api/log/<int:log_id>", methods=["DELETE"])
-def delete_log(log_id):
-    with get_db_connection() as conn:
-        conn.execute("DELETE FROM mood_logs WHERE id = ?", (log_id,))
-        conn.commit()
-    return jsonify({"message": "Deleted"}), 200
 
 
 if __name__ == "__main__":

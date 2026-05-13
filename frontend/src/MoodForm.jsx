@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
-function MoodForm({ onLogAdded }) {
+// 1. Added 'user' to the props
+function MoodForm({ user, onLogAdded }) {
   const [mood, setMood] = useState('Happy');
   const [note, setNote] = useState('');
   const [insight, setInsight] = useState('');
@@ -9,11 +10,14 @@ function MoodForm({ onLogAdded }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // 2. Added user_id to the payload so the backend knows who owns this log
     const payload = {
+      user_id: user.user_id, 
       mood,
       note,
       sleep_hours: parseInt(sleep),
-      exercise: exercise ? 1 : 0 // Ensure backend receives 1 or 0
+      exercise: exercise ? 1 : 0 
     };
 
     try {
@@ -27,7 +31,7 @@ function MoodForm({ onLogAdded }) {
 
       if (response.ok) {
         setInsight(data.insight); 
-        setNote(''); // Clear the diary entry after saving
+        setNote(''); 
         if (onLogAdded) onLogAdded(); 
       }
     } catch (error) {
@@ -110,61 +114,12 @@ function MoodForm({ onLogAdded }) {
   );
 }
 
-// --- STYLES ---
-
-const labelStyle = {
-  fontSize: '0.75rem',
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
-  color: '#94a3b8',
-  fontWeight: '700'
-};
-
-const inputStyle = {
-  padding: '12px 15px',
-  borderRadius: '12px',
-  border: '1px solid #e2e8f0',
-  fontSize: '1rem',
-  fontFamily: 'inherit',
-  outline: 'none',
-  backgroundColor: '#f8fafc'
-};
-
-const statsRowStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '15px 20px',
-  backgroundColor: '#f1f5f9',
-  borderRadius: '12px'
-};
-
-const smallInputStyle = {
-  width: '50px',
-  padding: '5px',
-  border: '1px solid #cbd5e1',
-  borderRadius: '6px',
-  textAlign: 'center'
-};
-
-const buttonStyle = {
-  backgroundColor: '#6366f1',
-  color: 'white',
-  padding: '14px',
-  border: 'none',
-  borderRadius: '12px',
-  fontWeight: '700',
-  fontSize: '1rem',
-  cursor: 'pointer',
-  transition: 'background 0.2s'
-};
-
-const insightBoxStyle = {
-  marginTop: '25px',
-  padding: '20px',
-  backgroundColor: '#f0f4ff',
-  borderRadius: '16px',
-  border: '1px solid #dbeafe'
-};
+// --- STYLES (Keep exactly as they were) ---
+const labelStyle = { fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', fontWeight: '700' };
+const inputStyle = { padding: '12px 15px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '1rem', fontFamily: 'inherit', outline: 'none', backgroundColor: '#f8fafc' };
+const statsRowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', backgroundColor: '#f1f5f9', borderRadius: '12px' };
+const smallInputStyle = { width: '50px', padding: '5px', border: '1px solid #cbd5e1', borderRadius: '6px', textAlign: 'center' };
+const buttonStyle = { backgroundColor: '#6366f1', color: 'white', padding: '14px', border: 'none', borderRadius: '12px', fontWeight: '700', fontSize: '1rem', cursor: 'pointer', transition: 'background 0.2s' };
+const insightBoxStyle = { marginTop: '25px', padding: '20px', backgroundColor: '#f0f4ff', borderRadius: '16px', border: '1px solid #dbeafe' };
 
 export default MoodForm;
