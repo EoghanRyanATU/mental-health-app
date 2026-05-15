@@ -1,11 +1,14 @@
 import unittest
 from app import get_mood_insight, mood_map
 
+
 class TestsBasedOnUseCasesLogic(unittest.TestCase):
 
     def test_UseCase03_SuccessfullyTrackHappy(self):
         result = get_mood_insight("Happy", 8, 1)
-        self.assertEqual(result, "That's great! Take a moment to appreciate what made you smile.")
+        self.assertEqual(
+            result, "That's great! Take a moment to appreciate what made you smile."
+        )
 
     def test_UseCase03_SuccessfullyTrackAnxious(self):
         result = get_mood_insight("Anxious", 4, 0)
@@ -24,5 +27,6 @@ class TestsBasedOnUseCasesLogic(unittest.TestCase):
         log_payload = {"user_id": 505, "mood": "Sad"}
         self.assertEqual(log_payload["user_id"], 505)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
