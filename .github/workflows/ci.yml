@@ -7,18 +7,20 @@ on:
     branches: [ "main" ]
 
 jobs:
-  # --- BACKEND QUALITY & SECURITY ---
+  # --- BACKEND QUALITY, SECURITY & TESTING ---
   backend-quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install Tools
+
+      - name: Install Tools & Dependencies
         run: |
-          pip install flake8 bandit black
+          pip install flake8 bandit black pytest pytest-cov pip-audit
           pip install -r requirements.txt
       
       - name: Code Formatting Check (Black)
@@ -29,28 +31,39 @@ jobs:
 
       - name: Security Scan (Bandit)
         run: bandit -r . -x ./venv
-        # Bandit finds common security holes in Python code
 
-  # --- FRONTEND QUALITY & SECURITY ---
+      - name: Python Dependency Audit (pip-audit)
+        run: pip-audit
+
+      - name: Run Automated Test Suite with Coverage
+        run: python -m pytest --cov=app tests/
+
+  # --- FRONTEND QUALITY, SECURITY & COMPILATION ---
   frontend-quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+
       - name: Install & Audit
         run: |
           cd frontend
           npm install
           npm audit --audit-level=high 
-          # Checks for known vulnerabilities in your JS libraries
 
       - name: Lint Check
         run: |
           cd frontend
-          npm run lint # Vite projects come with ESLint pre-configured
+          npm run lint
+
+      - name: Verify Frontend Production Build
+        run: |
+          cd frontend
+          npm run build
 
   # --- FINAL BUILD CHECK ---
   build-verification:
@@ -58,5 +71,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Verify Final Build
-        run: echo "All Quality and Security Gates Passed!"
+        run: echo "All Quality, Security, and Functional Testing Gates Passed!"
