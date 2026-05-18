@@ -5,13 +5,13 @@ from app import generate_password_hash, check_password_hash
 class TestsBasedOnUseCasesAuth(unittest.TestCase):
 
     def test_UseCase01_RegistrationHashing(self):
-        password = "UserPass123!"
+        password = "UserPass123!"  # nosec
         hashed = generate_password_hash(password)
         self.assertNotEqual(password, hashed)
         self.assertIn(":", hashed)
 
     def test_UseCase02_LoginSuccessfully(self):
-        password = "UserPass123!"
+        password = "UserPass123!"  # nosec
         hashed = generate_password_hash(password)
         self.assertTrue(check_password_hash(hashed, password))
         self.assertFalse(check_password_hash(hashed, "WrongPass"))
