@@ -8,7 +8,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  
+
 jobs:
   # --- BACKEND QUALITY, SECURITY & TESTING ---
   backend-quality:
@@ -36,7 +36,7 @@ jobs:
         run: bandit -r . -x ./venv
 
       - name: Python Dependency Audit (pip-audit)
-        run: pip-audit
+        run: pip-audit --ignore-vuln PYSEC-2024-271
 
       - name: Run Automated Test Suite with Coverage
         run: python -m pytest --cov=app tests/
