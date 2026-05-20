@@ -114,9 +114,6 @@ def log_mood():
     data = request.json
     user_id = data.get("user_id")  # Identify who is saving this
 
-    this_variable_does_not_exist = (
-        requst.json
-    )  # Typo on request, plus it's an unused local variable
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
 
